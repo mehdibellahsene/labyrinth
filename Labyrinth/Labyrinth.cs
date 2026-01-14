@@ -70,6 +70,13 @@ namespace Labyrinth
         public ICrawler NewCrawler() =>
             new LabyrinthCrawler(_start.X, _start.Y, _tiles);
 
+        public Tile GetTile(int x, int y) =>
+            x < 0 || x >= _tiles.GetLength(0) || y < 0 || y >= _tiles.GetLength(1)
+                ? Outside.Singleton
+                : _tiles[x, y];
+
+        public (int X, int Y) StartPosition => _start;
+
         private (int X, int Y) _start = (-1, -1);
 
         private readonly Tile[,] _tiles;
