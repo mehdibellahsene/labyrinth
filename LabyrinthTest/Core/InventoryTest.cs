@@ -1,7 +1,7 @@
 namespace LabyrinthTest.Core;
 
-using Labyrinth.Core;
-using Labyrinth.Items;
+using global::Labyrinth.Core;
+using global::Labyrinth.Items;
 
 [TestFixture]
 public class InventoryTest
@@ -65,13 +65,13 @@ public class InventoryTest
     }
 
     [Test]
-    public async Task ListItems_WithCancellation_ThrowsOperationCanceledException()
+    public async Task ListItems_WithCancellation_ThrowsTaskCanceledException()
     {
         var inventory = new AsyncInventory();
         var cts = new CancellationTokenSource();
         cts.Cancel();
 
-        Assert.ThrowsAsync<OperationCanceledException>(async () =>
+        Assert.ThrowsAsync<TaskCanceledException>(async () =>
             await inventory.ListItemsAsync(cts.Token));
     }
 }

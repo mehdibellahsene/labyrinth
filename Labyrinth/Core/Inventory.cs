@@ -1,7 +1,7 @@
 namespace Labyrinth.Core;
 
 using System.Collections.Concurrent;
-using Labyrinth.Items;
+using global::Labyrinth.Items;
 
 public class AsyncInventory
 {

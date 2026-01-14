@@ -1,6 +1,6 @@
 namespace Labyrinth.Exploration;
 
-using Labyrinth.Core;
+using global::Labyrinth.Core;
 
 public interface IExplorationStrategy
 {

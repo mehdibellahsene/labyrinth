@@ -1,7 +1,7 @@
 namespace LabyrinthTest.Core;
 
-using Labyrinth.Build;
-using Labyrinth.Core;
+using global::Labyrinth.Build;
+using global::Labyrinth.Core;
 
 [TestFixture]
 public class CrawlerTest

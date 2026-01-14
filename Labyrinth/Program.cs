@@ -74,7 +74,24 @@ else
     {
         settings = JsonSerializer.Deserialize<Dto.Settings>(File.ReadAllText(args[2]));
     }
-    contest = await ContestSession.Open(new Uri(args[0]), Guid.Parse(args[1]), settings);
+    try
+    {
+        contest = await ContestSession.Open(new Uri(args[0]), Guid.Parse(args[1]), settings);
+    }
+    catch (HttpRequestException ex)
+    {
+        Console.Error.WriteLine("Erreur HTTP lors de l'ouverture de la session : " + ex.Message);
+        Console.Error.WriteLine("Cause probable : clé `appKey` invalide, URL serveur incorrecte ou paramètres d'authentification manquants.");
+        Console.Error.WriteLine("Vérifications recommandées :");
+        Console.Error.WriteLine($" - URL serveur : `{args[0]}`");
+        Console.Error.WriteLine($" - appKey GUID : `{args[1]}`");
+        if (args.Length > 2 && File.Exists(args[2]))
+            Console.Error.WriteLine($" - settings JSON : `{args[2]}` (vérifier les champs d'authentification)");
+        else if (args.Length > 2)
+            Console.Error.WriteLine($" - settings JSON manquant ou non trouvé : `{args[2]}`");
+        Console.Error.WriteLine("Tester la requête manuellement (curl / Postman) pour obtenir le body de la réponse et plus de détails.");
+        return;
+    }
     labyrinth = new (contest.Builder);
     crawler = await contest.NewCrawler();
     bag = contest.Bags.First();

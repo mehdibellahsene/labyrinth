@@ -1,7 +1,7 @@
 namespace LabyrinthTest.Exploration;
 
-using Labyrinth.Core;
-using Labyrinth.Exploration;
+using global::Labyrinth.Core;
+using global::Labyrinth.Exploration;
 using Moq;
 
 [TestFixture]

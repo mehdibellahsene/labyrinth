@@ -1,7 +1,7 @@
 namespace LabyrinthServer.Services;
 
 using System.Collections.Concurrent;
-using Labyrinth.Core;
+using global::Labyrinth.Core;
 using LabyrinthServer.Models;
 
 public interface ILabyrinthService

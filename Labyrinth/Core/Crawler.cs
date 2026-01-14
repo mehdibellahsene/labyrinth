@@ -1,16 +1,16 @@
 namespace Labyrinth.Core;
 
-using Labyrinth.Tiles;
+using global::Labyrinth.Tiles;
 
 public class Crawler : ICrawler
 {
-    private readonly Labyrinth _maze;
+    private readonly global::Labyrinth.Labyrinth _maze;
 
     public int X { get; private set; }
     public int Y { get; private set; }
     public Direction Direction { get; private set; }
 
-    public Crawler(Labyrinth maze, int x, int y, Direction direction)
+    public Crawler(global::Labyrinth.Labyrinth maze, int x, int y, Direction direction)
     {
         _maze = maze;
         X = x;

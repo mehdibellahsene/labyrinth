@@ -2,7 +2,7 @@
   "profiles": {
     "Labyrinth": {
       "commandName": "Project",
-      "commandLineArgs": "https://labyrinth.syllab.com EA2DF750-CB9F-45E1-AF92-909BE20630FB labyrinth9x7.json",
+      "commandLineArgs": "",
       "workingDirectory": "C:\\Code\\cs\\console\\labyrinth\\Labyrinth"
     }
   }
