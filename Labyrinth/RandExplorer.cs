@@ -42,7 +42,8 @@ namespace Labyrinth
                     _crawler.Direction.TurnLeft();
                     changeEvent = DirectionChanged;
                 }
-                changeEvent?.Invoke(this, new CrawlingEventArgs(_crawler));
+                var facingType = await _crawler.FacingTileType;
+                changeEvent?.Invoke(this, new CrawlingEventArgs(_crawler.X, _crawler.Y, _crawler.Direction, facingType));
             }
             return n;
         }
