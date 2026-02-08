@@ -2,35 +2,37 @@
 
 Labyrinth explorer with smart pathfinding, multi-crawler coordination, and server API.
 
-## Prerequisites
-
-- .NET 10 SDK (preview)
-
 ## Pre-built binaries
 
-Available in `dist/`:
+Self-contained binaries (no .NET SDK required):
 
-```
-dist/Labyrinth/Labyrinth.exe       # Client
-dist/LabyrinthServer/LabyrinthServer.exe  # Server
-```
+| Platform | Client | Server |
+|----------|--------|--------|
+| Windows | `dist/win-x64/Labyrinth/Labyrinth.exe` | `dist/win-x64/LabyrinthServer/LabyrinthServer.exe` |
+| Linux | `dist/linux-x64/Labyrinth/Labyrinth` | `dist/linux-x64/LabyrinthServer/LabyrinthServer` |
+
+On Linux, make the binary executable first: `chmod +x Labyrinth`
 
 ## Usage
 
 ### Local demo (no server needed)
 
-```
-dist/Labyrinth/Labyrinth.exe
+```bash
+# Windows
+dist/win-x64/Labyrinth/Labyrinth.exe
+
+# Linux
+./dist/linux-x64/Labyrinth/Labyrinth
 ```
 
 ### With server
 
-```
+```bash
 # 1. Start the server
-dist/LabyrinthServer/LabyrinthServer.exe
+./LabyrinthServer
 
 # 2. Run the client
-dist/Labyrinth/Labyrinth.exe http://localhost:5000 <appKey>
+./Labyrinth http://localhost:5000 <appKey>
 ```
 
 ### Options
@@ -44,14 +46,16 @@ dist/Labyrinth/Labyrinth.exe http://localhost:5000 <appKey>
 
 ### Examples
 
-```
-Labyrinth.exe http://localhost:5000 <appKey> --multi 3 settings.json
-Labyrinth.exe http://localhost:5000 <appKey> --random
+```bash
+./Labyrinth http://localhost:5000 <appKey> --multi 3 settings.json
+./Labyrinth http://localhost:5000 <appKey> --random
 ```
 
 ## Build from source
 
-```
+Requires .NET 10 SDK (preview).
+
+```bash
 dotnet build Labyrinth.sln
 dotnet test
 dotnet run --project Labyrinth -- <args>
