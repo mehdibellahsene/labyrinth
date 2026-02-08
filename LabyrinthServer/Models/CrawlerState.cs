@@ -1,6 +1,6 @@
 namespace LabyrinthServer.Models;
 
-using global::Labyrinth.Core;
+using ApiTypes;
 
 public class CrawlerState
 {

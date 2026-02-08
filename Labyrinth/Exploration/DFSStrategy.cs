@@ -6,8 +6,6 @@ public class DFSStrategy : IExplorationStrategy
 {
     private readonly Stack<(int x, int y)> _path = new();
     private readonly HashSet<(int x, int y)> _visited = new();
-    private (int x, int y)? _backtrackTarget;
-
     public async Task<Actions> GetNextActionAsync(ICrawler crawler, CancellationToken ct = default)
     {
         var current = (crawler.X, crawler.Y);
@@ -31,7 +29,6 @@ public class DFSStrategy : IExplorationStrategy
     {
         _path.Clear();
         _visited.Clear();
-        _backtrackTarget = null;
     }
 
     private static (int x, int y) GetPositionInFront(ICrawler c) => c.Direction switch
