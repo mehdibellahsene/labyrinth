@@ -1,42 +1,44 @@
 using LabyrinthServer.Services;
+using System.Text.Json.Serialization;
 
 var builder = WebApplication.CreateBuilder(args);
 
+builder.Services.AddControllers()
+    .AddJsonOptions(options =>
+    {
+        options.JsonSerializerOptions.Converters.Add(new JsonStringEnumConverter());
+        options.JsonSerializerOptions.PropertyNamingPolicy = null;
+    });
+
 builder.Services.AddSingleton<ILabyrinthService, LabyrinthService>();
+
 builder.Services.AddEndpointsApiExplorer();
-builder.Services.AddSwaggerGen();
+builder.Services.AddSwaggerGen(c =>
+{
+    c.SwaggerDoc("v1", new Microsoft.OpenApi.Models.OpenApiInfo
+    {
+        Title = "Labyrinth Training API",
+        Version = "v1",
+        Description = "Training server for labyrinth exploration"
+    });
+});
 
 var app = builder.Build();
 
-app.UseSwagger();
-app.UseSwaggerUI();
-
-var api = app.MapGroup("/api");
-
-api.MapGet("/maze", (ILabyrinthService svc) => Results.Ok(svc.GetMaze()));
-
-api.MapPost("/crawler", (ILabyrinthService svc) =>
+if (app.Environment.IsDevelopment())
 {
-    var id = svc.CreateCrawler();
-    return Results.Created($"/api/crawler/{id}", new { id });
-});
+    app.UseSwagger();
+    app.UseSwaggerUI(c =>
+    {
+        c.SwaggerEndpoint("/swagger/v1/swagger.json", "Labyrinth Training API v1");
+    });
+}
 
-api.MapGet("/crawler/{id}/facing", (int id, ILabyrinthService svc) =>
-{
-    var tile = svc.GetFacingTile(id);
-    return tile is null ? Results.NotFound() : Results.Ok(tile);
-});
+app.UseHttpsRedirection();
+app.UseAuthorization();
+app.MapControllers();
 
-api.MapPost("/crawler/{id}/turn", (int id, bool left, ILabyrinthService svc) =>
-    svc.TurnCrawler(id, left) ? Results.Ok() : Results.NotFound());
-
-api.MapPost("/crawler/{id}/walk", (int id, ILabyrinthService svc) =>
-    Results.Ok(svc.TryWalk(id)));
-
-api.MapGet("/crawler/{id}/inventory", (int id, ILabyrinthService svc) =>
-{
-    var inv = svc.GetInventory(id);
-    return inv is null ? Results.NotFound() : Results.Ok(inv);
-});
+Console.WriteLine("Labyrinth Training Server started");
+Console.WriteLine("Swagger UI available at: /swagger");
 
 app.Run();

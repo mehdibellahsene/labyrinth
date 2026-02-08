@@ -1,125 +1,141 @@
-namespace LabyrinthServer.Services;
-
 using System.Collections.Concurrent;
-using global::Labyrinth.Core;
+using ApiTypes;
 using LabyrinthServer.Models;
 
-public interface ILabyrinthService
-{
-    string[] GetMaze();
-    int CreateCrawler();
-    TileInfo? GetFacingTile(int id);
-    bool TurnCrawler(int id, bool left);
-    WalkResult TryWalk(int id);
-    IEnumerable<string>? GetInventory(int id);
-}
+namespace LabyrinthServer.Services;
 
 public class LabyrinthService : ILabyrinthService
 {
-    private static readonly string[] Maze =
-    {
-        "+-------+",
-        "|   | k |",
-        "+ +-+---+",
-        "|   /   |",
-        "+---+ +-+",
-        "| x     |",
-        "+-------+"
-    };
+    private const int MaxCrawlersPerApp = 3;
+    private readonly ConcurrentDictionary<Guid, ServerCrawler> _crawlers = new();
+    private readonly ConcurrentDictionary<Guid, ServerLabyrinth> _labyrinths = new();
+    private readonly SemaphoreSlim _createLock = new(1, 1);
 
-    private readonly ConcurrentDictionary<int, CrawlerState> _crawlers = new();
-    private readonly ConcurrentDictionary<(int, int), string?> _items = new();
-    private int _nextId;
+    private static readonly string[] Maps =
+    [
+        """
+        +------/------+
+        |      k      |
+        |  +---/---+  |
+        |  |   k   |  |
+        |  | +---+ |  |
+        |  | |kx | |  |
+        |  | +-/-+ |  |
+        |  |       |  |
+        |  +-------+  |
+        |             |
+        +-------------+
+        """,
+        """
+        +---------/---------+
+        |         k         |
+        |  +------/------+  |
+        |  |      k      |  |
+        |  |  +---/---+  |  |
+        |  |  |   k   |  |  |
+        |  |  | +---+ |  |  |
+        |  |  | |kx | |  |  |
+        |  |  | +-/-+ |  |  |
+        |  |  |       |  |  |
+        |  |  +-------+  |  |
+        |  |             |  |
+        |  +-------------+  |
+        |                   |
+        +-------------------+
+        """,
+        """
+        +------------/------------+
+        |            k            |
+        |  +---------/---------+  |
+        |  |         k         |  |
+        |  |  +------/------+  |  |
+        |  |  |      k      |  |  |
+        |  |  |  +---/---+  |  |  |
+        |  |  |  |   k   |  |  |  |
+        |  |  |  | +---+ |  |  |  |
+        |  |  |  | |kx | |  |  |  |
+        |  |  |  | +-/-+ |  |  |  |
+        |  |  |  |       |  |  |  |
+        |  |  |  +-------+  |  |  |
+        |  |  |             |  |  |
+        |  |  +-------------+  |  |
+        |  |                   |  |
+        |  +-------------------+  |
+        |                         |
+        +-------------------------+
+        """
+    ];
 
-    public LabyrinthService()
+    public IEnumerable<Crawler> GetCrawlers(Guid appKey)
     {
-        _items[(4, 1)] = "key_1";
+        var lab = GetOrCreateLabyrinth(appKey);
+        return _crawlers.Values.Where(c => c.AppKey == appKey).Select(c => c.ToDto(lab));
     }
 
-    public string[] GetMaze() => Maze;
-
-    public int CreateCrawler()
+    public async Task<Crawler?> CreateCrawler(Guid appKey, Settings? settings)
     {
-        var id = Interlocked.Increment(ref _nextId);
-        _crawlers[id] = new CrawlerState
+        await _createLock.WaitAsync();
+        try
         {
-            Id = id,
-            X = 2,
-            Y = 5,
-            Direction = Direction.North
-        };
-        return id;
-    }
-
-    public TileInfo? GetFacingTile(int id)
-    {
-        if (!_crawlers.TryGetValue(id, out var state)) return null;
-
-        var (dx, dy) = GetOffset(state.Direction);
-        var ch = GetCharAt(state.X + dx, state.Y + dy);
-
-        var type = ch switch
-        {
-            ' ' or 'k' or 'x' => "room",
-            '/' => "door",
-            _ => "wall"
-        };
-
-        return new TileInfo(type);
-    }
-
-    public bool TurnCrawler(int id, bool left)
-    {
-        if (!_crawlers.TryGetValue(id, out var state)) return false;
-
-        state.Direction = left
-            ? (Direction)(((int)state.Direction + 3) % 4)
-            : (Direction)(((int)state.Direction + 1) % 4);
-        return true;
-    }
-
-    public WalkResult TryWalk(int id)
-    {
-        if (!_crawlers.TryGetValue(id, out var state))
-            return new WalkResult(false);
-
-        var (dx, dy) = GetOffset(state.Direction);
-        var nx = state.X + dx;
-        var ny = state.Y + dy;
-        var ch = GetCharAt(nx, ny);
-
-        if (ch == '|' || ch == '-' || ch == '+')
-            return new WalkResult(false);
-
-        if (ch == '/' && !state.Inventory.Any(k => k.StartsWith("key")))
-            return new WalkResult(false);
-
-        state.X = nx;
-        state.Y = ny;
-
-        if (_items.TryRemove((nx, ny), out var item) && item != null)
-        {
-            state.Inventory.Add(item);
-            return new WalkResult(true, state.Inventory);
+            if (_crawlers.Values.Count(c => c.AppKey == appKey) >= MaxCrawlersPerApp) return null;
+            var lab = GetOrCreateLabyrinth(appKey, settings);
+            var crawler = new ServerCrawler { AppKey = appKey, X = lab.StartX, Y = lab.StartY };
+            _crawlers[crawler.Id] = crawler;
+            return crawler.ToDto(lab);
         }
-
-        return new WalkResult(true);
+        finally { _createLock.Release(); }
     }
 
-    public IEnumerable<string>? GetInventory(int id)
-        => _crawlers.TryGetValue(id, out var s) ? s.Inventory : null;
-
-    private static (int, int) GetOffset(Direction d) => d switch
+    public Crawler? GetCrawler(Guid appKey, Guid crawlerId)
     {
-        Direction.North => (0, -1),
-        Direction.East => (1, 0),
-        Direction.South => (0, 1),
-        Direction.West => (-1, 0),
-        _ => (0, 0)
-    };
+        if (!_crawlers.TryGetValue(crawlerId, out var c) || c.AppKey != appKey) return null;
+        return c.ToDto(GetOrCreateLabyrinth(appKey));
+    }
 
-    private char GetCharAt(int x, int y)
-        => y >= 0 && y < Maze.Length && x >= 0 && x < Maze[y].Length
-            ? Maze[y][x]
-            : '#';
+    public (Crawler? crawler, bool walkFailed) UpdateCrawler(Guid appKey, Guid crawlerId, Crawler update)
+    {
+        if (!_crawlers.TryGetValue(crawlerId, out var c) || c.AppKey != appKey) return (null, false);
+        var lab = GetOrCreateLabyrinth(appKey);
+        c.Direction = update.Dir;
+        bool walkFailed = update.Walking && !c.TryWalk(lab);
+        return (c.ToDto(lab), walkFailed);
+    }
+
+    public bool DeleteCrawler(Guid appKey, Guid crawlerId)
+    {
+        if (!_crawlers.TryGetValue(crawlerId, out var c) || c.AppKey != appKey) return false;
+        return _crawlers.TryRemove(crawlerId, out _);
+    }
+
+    public IEnumerable<InventoryItem>? GetBag(Guid appKey, Guid crawlerId) =>
+        _crawlers.TryGetValue(crawlerId, out var c) && c.AppKey == appKey ? c.Bag.ToList() : null;
+
+    public IEnumerable<InventoryItem>? UpdateBag(Guid appKey, Guid crawlerId, IEnumerable<InventoryItem> items)
+    {
+        if (!_crawlers.TryGetValue(crawlerId, out var c) || c.AppKey != appKey) return null;
+        var lab = GetOrCreateLabyrinth(appKey);
+        var moves = items.Select(i => i.MoveRequired ?? false).ToList();
+        return lab.TryMoveItemsToRoom(c.X, c.Y, moves, c.Bag) ? c.Bag.ToList() : null;
+    }
+
+    public IEnumerable<InventoryItem>? GetItems(Guid appKey, Guid crawlerId) =>
+        _crawlers.TryGetValue(crawlerId, out var c) && c.AppKey == appKey
+            ? GetOrCreateLabyrinth(appKey).GetRoomItems(c.X, c.Y) : null;
+
+    public IEnumerable<InventoryItem>? UpdateItems(Guid appKey, Guid crawlerId, IEnumerable<InventoryItem> items)
+    {
+        if (!_crawlers.TryGetValue(crawlerId, out var c) || c.AppKey != appKey) return null;
+        var lab = GetOrCreateLabyrinth(appKey);
+        var moves = items.Select(i => i.MoveRequired ?? false).ToList();
+        return lab.TryMoveItemsFromRoom(c.X, c.Y, moves, c.Bag) ? lab.GetRoomItems(c.X, c.Y) : null;
+    }
+
+    public bool HasAccess(Guid appKey, Guid crawlerId) =>
+        _crawlers.TryGetValue(crawlerId, out var c) && c.AppKey == appKey;
+
+    public bool CrawlerExists(Guid crawlerId) => _crawlers.ContainsKey(crawlerId);
+
+    private ServerLabyrinth GetOrCreateLabyrinth(Guid appKey, Settings? settings = null) =>
+        _labyrinths.GetOrAdd(appKey, _ => new ServerLabyrinth(
+            Maps[settings?.RandomSeed != null ? Math.Abs(settings.RandomSeed.Value) % Maps.Length : 0]));
 }
