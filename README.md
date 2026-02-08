@@ -15,25 +15,29 @@ On Linux, make the binary executable first: `chmod +x Labyrinth`
 
 ## Usage
 
-### Local demo (no server needed)
+### 1. Local demo (no server needed)
 
 ```bash
-# Windows
-dist/win-x64/Labyrinth/Labyrinth.exe
-
-# Linux
-./dist/linux-x64/Labyrinth/Labyrinth
+./Labyrinth
 ```
 
-### With server
+### 2. With the included local server
 
 ```bash
-# 1. Start the server
+# Start the server
 ./LabyrinthServer
 
-# 2. Run the client
-./Labyrinth http://localhost:5000 <appKey>
+# In another terminal, run the client
+./Labyrinth http://localhost:5000 <appKey> --multi 3 settings.json
 ```
+
+### 3. With the remote server
+
+```bash
+./Labyrinth https://labyrinth.syllab.com <appKey> --multi 3 settings.json
+```
+
+`<appKey>` is a GUID identifying your session (e.g. `550e8400-e29b-41d4-a716-446655440000`).
 
 ### Options
 
@@ -44,13 +48,6 @@ dist/win-x64/Labyrinth/Labyrinth.exe
 | `--visual` | Slower rendering for visualization |
 | `settings.json` | Pass a settings file (e.g. `{ "random-seed": 2 }`) |
 
-### Examples
-
-```bash
-./Labyrinth http://localhost:5000 <appKey> --multi 3 settings.json
-./Labyrinth http://localhost:5000 <appKey> --random
-```
-
 ## Build from source
 
 Requires .NET 10 SDK (preview).
@@ -58,5 +55,5 @@ Requires .NET 10 SDK (preview).
 ```bash
 dotnet build Labyrinth.sln
 dotnet test
-dotnet run --project Labyrinth -- <args>
+dotnet run --project Labyrinth -- http://localhost:5000 <appKey> --multi 3 settings.json
 ```

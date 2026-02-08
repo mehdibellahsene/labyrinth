@@ -94,21 +94,7 @@ public class SmartExplorer : IExplorer
             DirectionChanged?.Invoke(this, new CrawlingEventArgs(_crawler.X, _crawler.Y, _crawler.Direction, ft));
         }
 
-        var (wx, wy) = (_crawler.X + targetDir.DeltaX, _crawler.Y + targetDir.DeltaY);
-        var targetTile = _map.GetTile(wx, wy);
-        bool wasDoor = targetTile is { IsDoor: true, IsDoorOpen: false };
-
-        if (await _crawler.TryWalk(bag) is { } result)
-        {
-            if (wasDoor) _map.MarkDoorOpened(wx, wy);
-            await CollectItems(bag, result);
-            PositionChanged?.Invoke(this, new CrawlingEventArgs(_crawler.X, _crawler.Y, _crawler.Direction, await _crawler.FacingTileType));
-            _pathIndex++;
-            return true;
-        }
-
-        _currentPath = null;
-        return true;
+        return await TryMoveForward(bag, targetDir);
     }
 
     private async Task<bool> WanderStep(Inventory bag)
@@ -125,17 +111,36 @@ public class SmartExplorer : IExplorer
             var facingType = await _crawler.FacingTileType;
             if (facingType == typeof(Outside)) return false;
 
-            if (facingType != typeof(Wall) && await _crawler.TryWalk(bag) is { } result)
+            if (facingType != typeof(Wall))
             {
-                await CollectItems(bag, result);
-                PositionChanged?.Invoke(this, new CrawlingEventArgs(_crawler.X, _crawler.Y, _crawler.Direction, await _crawler.FacingTileType));
-                return true;
+                var dir = _crawler.Direction;
+                if (await TryMoveForward(bag, dir))
+                    return true;
             }
 
             _crawler.Direction.TurnLeft();
             DirectionChanged?.Invoke(this, new CrawlingEventArgs(_crawler.X, _crawler.Y, _crawler.Direction, await _crawler.FacingTileType));
         }
         return true;
+    }
+
+    private async Task<bool> TryMoveForward(Inventory bag, Direction targetDir)
+    {
+        var (wx, wy) = (_crawler.X + targetDir.DeltaX, _crawler.Y + targetDir.DeltaY);
+        var targetTile = _map.GetTile(wx, wy);
+        bool wasDoor = targetTile is { IsDoor: true, IsDoorOpen: false };
+
+        if (await _crawler.TryWalk(bag) is { } result)
+        {
+            if (wasDoor) _map.MarkDoorOpened(wx, wy);
+            await CollectItems(bag, result);
+            PositionChanged?.Invoke(this, new CrawlingEventArgs(_crawler.X, _crawler.Y, _crawler.Direction, await _crawler.FacingTileType));
+            if (_currentPath != null) _pathIndex++;
+            return true;
+        }
+
+        _currentPath = null;
+        return false;
     }
 
     private ExplorationTarget DetermineTarget(bool hasKey)
@@ -166,8 +171,13 @@ public class SmartExplorer : IExplorer
     private async Task CollectItems(Inventory bag, Inventory roomInventory)
     {
         if (!roomInventory.HasItems) return;
-        await bag.TryMoveItemsFrom(roomInventory, roomInventory.ItemTypes.Select(_ => true).ToList());
-        if (bag.ItemTypes.Any(t => t == typeof(Key)))
-            _map.MarkKeyCollected(_crawler.X, _crawler.Y);
+
+        _map.MarkKeyFound(_crawler.X, _crawler.Y);
+
+        if (await bag.TryMoveItemsFrom(roomInventory, roomInventory.ItemTypes.Select(_ => true).ToList()))
+        {
+            if (bag.ItemTypes.Any(t => t == typeof(Key)))
+                _map.MarkKeyCollected(_crawler.X, _crawler.Y);
+        }
     }
 }
