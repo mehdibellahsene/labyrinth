@@ -17,24 +17,49 @@ On Linux, make the binary executable first: `chmod +x Labyrinth`
 
 ### 1. Local demo (no server needed)
 
+**Windows:**
+```
+dist\win-x64\Labyrinth\Labyrinth.exe
+```
+
+**Linux:**
 ```bash
-./Labyrinth
+chmod +x dist/linux-x64/Labyrinth/Labyrinth
+dist/linux-x64/Labyrinth/Labyrinth
 ```
 
 ### 2. With the included local server
 
-```bash
-# Start the server
-./LabyrinthServer
+**Windows (2 terminals):**
+```
+# Terminal 1 - Start the server
+dist\win-x64\LabyrinthServer\LabyrinthServer.exe
 
-# In another terminal, run the client
-./Labyrinth http://localhost:5000 <appKey> --multi 3 settings.json
+# Terminal 2 - Run the client
+dist\win-x64\Labyrinth\Labyrinth.exe http://localhost:5000 <appKey> --multi 3 settings.json
 ```
 
-### 3. With the remote server
-
+**Linux (2 terminals):**
 ```bash
-./Labyrinth https://labyrinth.syllab.com <appKey> --multi 3 settings.json
+# Terminal 1 - Start the server
+chmod +x dist/linux-x64/LabyrinthServer/LabyrinthServer
+dist/linux-x64/LabyrinthServer/LabyrinthServer
+
+# Terminal 2 - Run the client
+chmod +x dist/linux-x64/Labyrinth/Labyrinth
+dist/linux-x64/Labyrinth/Labyrinth http://localhost:5000 <appKey> --multi 3 settings.json
+```
+
+### 3. With the remote server (no local server needed)
+
+**Windows:**
+```
+dist\win-x64\Labyrinth\Labyrinth.exe https://labyrinth.syllab.com <appKey> --multi 3 settings.json
+```
+
+**Linux:**
+```bash
+dist/linux-x64/Labyrinth/Labyrinth https://labyrinth.syllab.com <appKey> --multi 3 settings.json
 ```
 
 `<appKey>` is a GUID identifying your session (e.g. `550e8400-e29b-41d4-a716-446655440000`).
